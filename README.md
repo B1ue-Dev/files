@@ -20,12 +20,22 @@ import io
 client = interactions.Client(...)
 client.load('interactions.ext.files')
 
-
-async def test(ctx: interactions.CommandContext):
-    data = "Hey look, this is a file from CommandContext."
-    file = io.StringIO(data)
+@client.command(
+    name="file",
+    description="Send a message as a text file",
+    options=[
+        interactions.Option(
+            type=interactions.OptionType.STRING,
+            name="message",
+            description="Message",
+            required=True
+        )
+    ]
+)
+async def _file(ctx: interactions.CommandContext, message: str):
+    file = io.StringIO(message)
     with file as f:
-        file = interactions.File(filename="aaaaa.txt", fp=f)
+        file = interactions.File(filename="message.txt", fp=f)
         await ctx.send(files=file)
 
 

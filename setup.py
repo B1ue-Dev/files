@@ -6,12 +6,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="interactions-files",
     version="1.0.0",
-    description="Add files into CommandContext sending",
+    description="An external for interactions.py, monkeypatching CommandContext for files sending",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Jimmy-Blue/interactions-files",
     author="Jimmy-Blue",
-    author_email="jummyblue00@duck.com",
+    author_email="jimmyblue00@duck.com",
     license="MIT",
     packages=["interactions.ext.files"],
     classifiers=[

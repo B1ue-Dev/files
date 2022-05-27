@@ -44,6 +44,8 @@ client.start()
 
 You can use it in an ``Extension``, a.k.a Cogs. Just load ``interactions.ext.files`` and you are done.
 
+If you need an in-depth explanation on how ``interactions-files`` can be used, check out the [examples](./examples/) folder.
+
 # Credits
 
 - Credits to [Toricane](https://github.com/Toricane) for the original idea.

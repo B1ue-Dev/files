@@ -36,7 +36,7 @@ class Files(Extension):
             """
 
             file_data = None
-            if files:
+            if files is not MISSING and len(files) > 0:
                 file_data = MultipartWriter("form-data")
                 part = file_data.append_json(data)
                 part.set_content_disposition("form-data", name="payload_json")
@@ -75,7 +75,7 @@ class Files(Extension):
             """
             # ^ again, I don't know if python will let me
             file_data = None
-            if files:
+            if files is not MISSING or files is not None:
                 file_data = MultipartWriter("form-data")
                 part = file_data.append_json(data)
                 part.set_content_disposition("form-data", name="payload_json")
@@ -101,7 +101,7 @@ class Files(Extension):
             content: Optional[str] = MISSING,
             *,
             tts: Optional[bool] = MISSING,
-            files: Optional[List[File]] = None,
+            files: Optional[Union[File, List[File]]] = MISSING,
             embeds: Optional[Union[Embed, List[Embed]]] = MISSING,
             allowed_mentions: Optional[MessageInteraction] = MISSING,
             components: Optional[
@@ -169,7 +169,7 @@ class Files(Extension):
                 content=_content,
                 tts=_tts,
                 # files=file,
-                files=_files,
+                attachments=_files,
                 embeds=_embeds,
                 allowed_mentions=_allowed_mentions,
                 components=_components,
@@ -242,13 +242,13 @@ class Files(Extension):
                 payload["components"] = _components
 
             if not files or files is MISSING:
-                _files = []
+                _files = self.message.attachments
             elif isinstance(files, list):
                 _files = [file._json_payload(id) for id, file in enumerate(files)]
             else:
                 _files = [files._json_payload(0)]
-                # files = [files]
-                payload["files"] = _files
+                files = [files]
+                payload["attachments"] = _files
 
             payload = Message(**payload)
             self.message._client = self.client

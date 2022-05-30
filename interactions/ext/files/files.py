@@ -24,19 +24,13 @@ from interactions import (
 class Files(Extension):
     def __init__(self, client: Client, *args, **kwargs):
 
-        # file sending
+
         async def create_interaction_response(
             self, token: str, application_id: int, data: dict, files: List[File]
         ) -> None:
-            """
-            Posts initial response to an interaction, but you need to add the token.
-            :param token: Token.
-            :param application_id: Application ID snowflake
-            :param data: The data to send.
-            """
 
             file_data = None
-            if files:
+            if files is not MISSING and len(files) > 0:
                 file_data = MultipartWriter("form-data")
                 part = file_data.append_json(data)
                 part.set_content_disposition("form-data", name="payload_json")
@@ -57,6 +51,7 @@ class Files(Extension):
             )
 
 
+
         async def edit_interaction_response(
             self,
             data: dict,
@@ -65,17 +60,9 @@ class Files(Extension):
             application_id: str,
             message_id: str = "@original",
         ) -> dict:
-            """
-            Edits an existing interaction message, but token needs to be manually called.
-            :param data: A dictionary containing the new response.
-            :param token: the token of the interaction
-            :param application_id: Application ID snowflake.
-            :param message_id: Message ID snowflake. Defaults to `@original` which represents the initial response msg.
-            :return: Updated message data.
-            """
-            # ^ again, I don't know if python will let me
+
             file_data = None
-            if files:
+            if files is not MISSING and files is not None:
                 file_data = MultipartWriter("form-data")
                 part = file_data.append_json(data)
                 part.set_content_disposition("form-data", name="payload_json")
@@ -96,12 +83,13 @@ class Files(Extension):
             )
 
 
+
         async def base_send(
             self,
             content: Optional[str] = MISSING,
             *,
             tts: Optional[bool] = MISSING,
-            files: Optional[List[File]] = None,
+            files: Optional[Union[File, List[File]]] = MISSING,
             embeds: Optional[Union[Embed, List[Embed]]] = MISSING,
             allowed_mentions: Optional[MessageInteraction] = MISSING,
             components: Optional[
@@ -116,6 +104,7 @@ class Files(Extension):
             ] = MISSING,
             ephemeral: Optional[bool] = False,
         ) -> Message:
+
             if (
                 content is MISSING
                 and self.message
@@ -125,8 +114,7 @@ class Files(Extension):
             else:
                 _content: str = "" if content is MISSING else content
             _tts: bool = False if tts is MISSING else tts
-            # _file = None if file is None else file
-            # _attachments = [] if attachments else None
+
             if (
                 embeds is MISSING
                 and self.message
@@ -138,9 +126,10 @@ class Files(Extension):
                 if not embeds or embeds is MISSING
                 else ([embed._json for embed in embeds] if isinstance(embeds, list) else [embeds._json])
             )
-            _allowed_mentions: dict = {} if allowed_mentions is MISSING else allowed_mentions
-            if components is not MISSING and components:
 
+            _allowed_mentions: dict = {} if allowed_mentions is MISSING else allowed_mentions
+
+            if components is not MISSING and components:
                 _components = _build_components(components=components)
             elif (
                 components is MISSING
@@ -164,12 +153,11 @@ class Files(Extension):
 
             _ephemeral: int = (1 << 6) if ephemeral else 0
 
-            # TODO: post-v4: Add attachments into Message obj.
             payload: Message = Message(
                 content=_content,
                 tts=_tts,
                 # files=file,
-                files=_files,
+                attachments=_files,
                 embeds=_embeds,
                 allowed_mentions=_allowed_mentions,
                 components=_components,
@@ -180,12 +168,13 @@ class Files(Extension):
             return payload, files
 
 
+
         async def base_edit(
             self,
             content: Optional[str] = MISSING,
             *,
             tts: Optional[bool] = MISSING,
-            files: Optional[List[File]] = None,
+            files: Optional[Union[File, List[File]]] = MISSING,
             embeds: Optional[Union[Embed, List[Embed]]] = MISSING,
             allowed_mentions: Optional[MessageInteraction] = MISSING,
             message_reference: Optional[MessageReference] = MISSING,
@@ -206,9 +195,9 @@ class Files(Extension):
             if self.message.content is not None or content is not MISSING:
                 _content: str = self.message.content if content is MISSING else content
                 payload["content"] = _content
+
             _tts: bool = False if tts is MISSING else tts
             payload["tts"] = _tts
-            # _file = None if file is None else file
 
             if self.message.embeds is not None or embeds is not MISSING:
                 if embeds is MISSING:
@@ -238,22 +227,25 @@ class Files(Extension):
                     _components = []
                 else:
                     _components = _build_components(components=components)
-
                 payload["components"] = _components
 
-            if not files or files is MISSING:
-                _files = []
-            elif isinstance(files, list):
-                _files = [file._json_payload(id) for id, file in enumerate(files)]
+            if files is MISSING:
+                pass
             else:
-                _files = [files._json_payload(0)]
-                # files = [files]
-                payload["files"] = _files
+                if not files:
+                    _files = []
+                elif isinstance(files, list):
+                    _files = [file._json_payload(id) for id, file in enumerate(files)]
+                else:
+                    _files = [files._json_payload(0)]
+                    files = [files]
+                payload["attachments"] = _files
 
             payload = Message(**payload)
             self.message._client = self.client
 
             return payload, files
+
 
 
         async def command_send(self, content: Optional[str] = MISSING, **kwargs) -> Message:
@@ -299,6 +291,7 @@ class Files(Extension):
             return payload
         
 
+
         async def command_edit(self, content: Optional[str] = MISSING, **kwargs) -> Message:
             payload, files = await base_edit(self, content, **kwargs)
             msg = None
@@ -315,8 +308,8 @@ class Files(Extension):
                         token=self.token,
                         application_id=str(self.id),
                         data={"type": self.callback.value, "data": payload._json},
+                        files=files,
                         message_id=self.message.id if self.message else "@original",
-                        files=files
                     )
                     if res["flags"] == 64:
                         print("You can't edit hidden messages.")
@@ -332,8 +325,8 @@ class Files(Extension):
                     self.client,
                     token=self.token,
                     application_id=str(self.application_id),
+                    files=files,
                     data={"type": self.callback.value, "data": payload._json},
-                    files=files
                 )
                 if res["flags"] == 64:
                     print("You can't edit hidden messages.")
@@ -346,6 +339,7 @@ class Files(Extension):
             if msg is not None:
                 return msg
             return payload
+
 
 
         async def component_send(self, content: Optional[str] = MISSING, **kwargs) -> Message:

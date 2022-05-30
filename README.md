@@ -1,5 +1,5 @@
 # interactions-files
-An external for interactions.py to add ``files`` into CommandContext send.
+An extension library for interactions.py allowing files in interaction responses.
 
 # How to use
 

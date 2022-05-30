@@ -231,7 +231,6 @@ class Files(Extension):
 
             if files is MISSING:
                 pass
-                files = [files]
             else:
                 if not files:
                     _files = []
@@ -309,8 +308,8 @@ class Files(Extension):
                         token=self.token,
                         application_id=str(self.id),
                         data={"type": self.callback.value, "data": payload._json},
+                        files=files,
                         message_id=self.message.id if self.message else "@original",
-                        files=files
                     )
                     if res["flags"] == 64:
                         print("You can't edit hidden messages.")
@@ -326,8 +325,8 @@ class Files(Extension):
                     self.client,
                     token=self.token,
                     application_id=str(self.application_id),
+                    files=files,
                     data={"type": self.callback.value, "data": payload._json},
-                    files=files
                 )
                 if res["flags"] == 64:
                     print("You can't edit hidden messages.")

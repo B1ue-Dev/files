@@ -1,4 +1,5 @@
 from typing import List, Optional, Union
+from copy import deepcopy
 
 from aiohttp import MultipartWriter
 from interactions.api.http.route import Route
@@ -172,9 +173,9 @@ class Files(Extension):
                 []
                 if not embeds or embeds is MISSING
                 else (
-                    [embed._json for embed in embeds]
+                    [deepcopy(embed._json) for embed in embeds]
                     if isinstance(embeds, list)
-                    else [embeds._json]
+                    else [deepcopy(embeds._json)]
                 )
             )
 
@@ -258,9 +259,9 @@ class Files(Extension):
                     []
                     if not embeds
                     else (
-                        [embed._json for embed in embeds]
+                        [deepcopy(embed._json) for embed in embeds]
                         if isinstance(embeds, list)
-                        else [embeds._json]
+                        else [deepcopy(embeds._json)]
                     )
                 )
                 payload["embeds"] = _embeds

@@ -23,16 +23,11 @@ from interactions import (
 
 class Files(Extension):
     def __init__(self, client: Client):
+        self.client: Client = client
+
         async def create_interaction_response(
             self, token: str, application_id: int, data: dict, files: List[File]
         ) -> None:
-            """
-            Posts initial response to an interaction, but you need to add the token.
-
-            :param token: Token.
-            :param application_id: Application ID snowflake
-            :param data: The data to send.
-            """
 
             file_data = None
             if files is not MISSING and len(files) > 0:
@@ -56,22 +51,8 @@ class Files(Extension):
             )
 
         async def edit_interaction_response(
-            self,
-            data: dict,
-            files: List[File],
-            token: str,
-            application_id: str,
-            message_id: str = "@original",
+            self, data: dict, files: List[File], token: str, application_id: str, message_id: str = "@original",
         ) -> dict:
-            """
-            Edits an existing interaction message, but token needs to be manually called.
-
-            :param data: A dictionary containing the new response.
-            :param token: the token of the interaction
-            :param application_id: Application ID snowflake.
-            :param message_id: Message ID snowflake. Defaults to `@original` which represents the initial response msg.
-            :return: Updated message data.
-            """
 
             file_data = None
             if files is not MISSING and files is not None:
@@ -96,20 +77,10 @@ class Files(Extension):
                 data=file_data,
             )
 
-        async def _post_followup(
-            self,
-            data: dict,
-            files: List[File],
-            token: str,
-            application_id: str,
+        async def post_followup(
+            self, data: dict, files: List[File], token: str, application_id: str,
         ) -> dict:
-            """
-            Send a followup to an interaction.
 
-            :param data: the payload to send
-            :param application_id: the id of the application
-            :param token: the token of the interaction
-            """
             file_data = None
             if files is not MISSING and files is not None:
                 file_data = MultipartWriter("form-data")
@@ -150,7 +121,7 @@ class Files(Extension):
                 ]
             ] = MISSING,
             ephemeral: Optional[bool] = False,
-        ) -> Message:
+        ) -> dict:
 
             if (
                 content is MISSING
@@ -171,16 +142,10 @@ class Files(Extension):
             _embeds: list = (
                 []
                 if not embeds or embeds is MISSING
-                else (
-                    [embed._json for embed in embeds]
-                    if isinstance(embeds, list)
-                    else [embeds._json]
-                )
+                else ([embed._json for embed in embeds] if isinstance(embeds, list) else [embeds._json])
             )
 
-            _allowed_mentions: dict = (
-                {} if allowed_mentions is MISSING else allowed_mentions
-            )
+            _allowed_mentions: dict = {} if allowed_mentions is MISSING else allowed_mentions
 
             if components is not MISSING and components:
                 _components = _build_components(components=components)
@@ -206,7 +171,7 @@ class Files(Extension):
 
             _ephemeral: int = (1 << 6) if ephemeral else 0
 
-            payload: Message = Message(
+            payload: dict = dict(
                 content=_content,
                 tts=_tts,
                 # files=file,
@@ -216,10 +181,10 @@ class Files(Extension):
                 components=_components,
                 flags=_ephemeral,
             )
-            self.message = payload
-            self.message._client = self.client
+
             return payload, files
 
+        
         async def base_edit(
             self,
             content: Optional[str] = MISSING,
@@ -230,16 +195,9 @@ class Files(Extension):
             allowed_mentions: Optional[MessageInteraction] = MISSING,
             message_reference: Optional[MessageReference] = MISSING,
             components: Optional[
-                Union[
-                    ActionRow,
-                    Button,
-                    SelectMenu,
-                    List[ActionRow],
-                    List[Button],
-                    List[SelectMenu],
-                ]
+                Union[ActionRow, Button, SelectMenu, List[ActionRow], List[Button], List[SelectMenu]]
             ] = MISSING,
-        ) -> Message:
+        ) -> dict:
 
             payload = {}
 
@@ -253,7 +211,6 @@ class Files(Extension):
             if self.message.embeds is not None or embeds is not MISSING:
                 if embeds is MISSING:
                     embeds = self.message.embeds
-                    _embeds = []
                 _embeds: list = (
                     []
                     if not embeds
@@ -265,12 +222,8 @@ class Files(Extension):
                 )
                 payload["embeds"] = _embeds
 
-            _allowed_mentions: dict = (
-                {} if allowed_mentions is MISSING else allowed_mentions
-            )
-            _message_reference: dict = (
-                {} if message_reference is MISSING else message_reference._json
-            )
+            _allowed_mentions: dict = {} if allowed_mentions is MISSING else allowed_mentions
+            _message_reference: dict = {} if message_reference is MISSING else message_reference._json
 
             payload["allowed_mentions"] = _allowed_mentions
             payload["message_reference"] = _message_reference
@@ -282,6 +235,7 @@ class Files(Extension):
                     _components = []
                 else:
                     _components = _build_components(components=components)
+
                 payload["components"] = _components
 
             if files is MISSING:
@@ -296,10 +250,9 @@ class Files(Extension):
                     files = [files]
                 payload["attachments"] = _files
 
-            payload = Message(**payload)
-            self.message._client = self.client
-
             return payload, files
+
+
 
         async def command_send(
             self, content: Optional[str] = MISSING, **kwargs
@@ -309,41 +262,56 @@ class Files(Extension):
             if not self.deferred:
                 self.callback = InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE
 
-            _payload: dict = {"type": self.callback.value, "data": payload._json}
+            _payload: dict = {"type": self.callback.value, "data": payload}
 
             msg = None
             if self.responded or self.deferred:
                 if self.deferred:
                     res = await edit_interaction_response(
                         self.client,
-                        data=payload._json,
+                        data=payload,
                         files=files,
                         token=self.token,
                         application_id=str(self.application_id),
                     )
-                    self.deferred = False
-                    self.responded = True
+                    # self.deferred = False
+                    # self.responded = True
                 else:
-                    res = await self.client._post_followup(
-                        data=payload._json,
+                    res = await post_followup(
+                        self.client,
+                        data=payload,
+                        files=files,
                         token=self.token,
                         application_id=str(self.application_id),
                     )
                 self.message = msg = Message(**res, _client=self.client)
             else:
-                res = await create_interaction_response(
+                await create_interaction_response(
                     self.client,
                     token=self.token,
                     application_id=int(self.id),
                     data=_payload,
                     files=files,
                 )
-                if res and not res.get("code"):
-                    self.message = msg = Message(**res, _client=self.client)
+                __newdata = await self._client.edit_interaction_response(
+                    data={},
+                    token=self.token,
+                    application_id=str(self.application_id),
+                )
+                if not __newdata.get("code"):
+                    # if sending message fails somehow
+                    msg = Message(**__newdata, _client=self._client)
+                    self.message = msg
                 self.responded = True
             if msg is not None:
                 return msg
-            return payload
+
+            return Message(
+                **payload,
+                _client=self._client,
+                author={"_client": self._client, "id": None, "username": None, "discriminator": None},
+            )
+
 
         async def command_edit(
             self, content: Optional[str] = MISSING, **kwargs
@@ -356,7 +324,7 @@ class Files(Extension):
                     res = await self.client.edit_message(
                         int(self.channel_id),
                         int(self.message.id),
-                        payload=payload._json,
+                        payload=payload,
                         files=files,
                     )
                     self.message = msg = Message(**res, _client=self.client)
@@ -365,26 +333,24 @@ class Files(Extension):
                         self.client,
                         token=self.token,
                         application_id=str(self.id),
-                        data={"type": self.callback.value, "data": payload._json},
+                        data={"type": self.callback.value, "data": payload},
                         files=files,
                         message_id=self.message.id if self.message else "@original",
                     )
                     if res["flags"] == 64:
                         print("You cannot edit hidden messages.")
-                        self.message = payload
-                        self.message._client = self.client
                     else:
                         await self.client.edit_message(
                             int(self.channel_id),
                             res["id"],
-                            payload=payload._json,
+                            payload=payload,
                             files=files,
                         )
                         self.message = msg = Message(**res, _client=self.client)
             else:
                 res = await edit_interaction_response(
                     self.client,
-                    data={"type": self.callback.value, "data": payload._json},
+                    data={"type": self.callback.value, "data": payload},
                     files=files,
                     token=self.token,
                     application_id=str(self.application_id),
@@ -395,14 +361,16 @@ class Files(Extension):
                     await self.client.edit_message(
                         int(self.channel_id),
                         res["id"],
-                        payload=payload._json,
+                        payload=payload,
                         files=files,
                     )
+                    await self._client.edit_message(int(self.channel_id), res["id"], payload=payload, files=files)
                     self.message = msg = Message(**res, _client=self.client)
 
             if msg is not None:
                 return msg
-            return payload
+            return Message(**payload, _client=self._client)
+
 
         async def component_send(
             self, content: Optional[str] = MISSING, **kwargs
@@ -412,7 +380,7 @@ class Files(Extension):
             if not self.deferred:
                 self.callback = InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE
 
-            _payload: dict = {"type": self.callback.value, "data": payload._json}
+            _payload: dict = {"type": self.callback.value, "data": payload}
 
             msg = None
             if (
@@ -423,22 +391,23 @@ class Files(Extension):
                 if self.deferred:
                     res = await edit_interaction_response(
                         self.client,
-                        data=payload._json,
+                        data=payload,
                         files=files,
                         token=self.token,
                         application_id=str(self.application_id),
                     )
-                    self.deferred = False
+                    # self.deferred = False
                     self.responded = True
                 else:
-                    res = await _post_followup(
+                    res = await post_followup(
                         self.client,
-                        data=payload._json,
+                        data=payload,
                         files=files,
                         token=self.token,
                         application_id=str(self.application_id),
                     )
                 self.message = msg = Message(**res, _client=self.client)
+
             else:
                 res = await create_interaction_response(
                     self.client,
@@ -455,51 +424,54 @@ class Files(Extension):
 
             if msg is not None:
                 return msg
-            return payload
+            return Message(**payload)
+
 
         async def component_edit(
             self, content: Optional[str] = MISSING, **kwargs
         ) -> Message:
             payload, files = await base_edit(self, content, **kwargs)
-
-            msg = None
-
+            
             if not self.deferred:
                 self.callback = InteractionCallbackType.UPDATE_MESSAGE
                 await create_interaction_response(
                     self.client,
                     token=self.token,
                     application_id=int(self.id),
-                    data={"type": self.callback.value, "data": payload._json},
+                    data={"type": self.callback.value, "data": payload},
                     files=files,
                 )
-                self.message = payload
+                # self.message = payload
                 self.responded = True
+
             elif self.callback != InteractionCallbackType.DEFERRED_UPDATE_MESSAGE:
-                await _post_followup(
+                res = await post_followup(
                     self.client,
-                    data=payload._json,
+                    data=payload,
                     files=files,
                     token=self.token,
                     application_id=str(self.application_id),
                 )
+                self.message = Message(**res, _client=self._client)
             else:
                 res = await edit_interaction_response(
                     self.client,
-                    data=payload._json,
+                    data=payload,
                     files=files,
                     token=self.token,
                     application_id=str(self.application_id),
                 )
                 self.responded = True
-                self.message = msg = Message(**res, _client=self.client)
+                self.message = Message(**res, _client=self._client)
 
-            if msg is not None:
-                return msg
+            if self.message is None:
+                self.message = Message(**payload, _client=self._client)
 
-            return payload
+            return self.message
+
 
         _Context.send = base_send
+        _Context.edit = base_edit
         CommandContext.send = command_send
         CommandContext.edit = command_edit
         ComponentContext.send = component_send

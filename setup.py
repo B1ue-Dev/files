@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="interactions-files",
-    version="1.0.3",
+    version="1.1.0",
     description="An external for interactions.py, adding files to CommandContext for file sending",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -111,6 +111,7 @@ class Inter_Request:
             data=file_data,
         )
 
+
 class Context(_Context):
     """A custom version of _Context that add file sending."""
     
@@ -286,6 +287,7 @@ class Context(_Context):
 
 
 class Files(Extension):
+    """I don't know what this does, but it is required to load the extension."""
     def __init__(self, client: Client):
         self.client: Client = client
     

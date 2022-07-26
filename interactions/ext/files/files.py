@@ -122,6 +122,7 @@ class Context(_Context):
         content: Optional[str] = MISSING,
         *,
         tts: Optional[bool] = MISSING,
+        attachments: Optional[List[Attachment]] = MISSING,
         files: Optional[Union[File, List[File]]] = MISSING,
         embeds: Optional[Union[Embed, List[Embed]]] = MISSING,
         allowed_mentions: Optional[MessageInteraction] = MISSING,
@@ -176,6 +177,8 @@ class Context(_Context):
         else:
             _components = []
 
+        _attachments = [] if attachments is MISSING else [a._json for a in attachments]
+
         if not files or files is MISSING:
             _files = []
         elif isinstance(files, list):
@@ -185,6 +188,8 @@ class Context(_Context):
             files = [files]
 
         _ephemeral: int = (1 << 6) if ephemeral else 0
+
+        _files.extend(_attachments)
 
         payload: dict = dict(
             content=_content,
@@ -203,6 +208,7 @@ class Context(_Context):
         content: Optional[str] = MISSING,
         *,
         tts: Optional[bool] = MISSING,
+        attachments: Optional[List[Attachment]] = MISSING,
         files: Optional[Union[File, List[File]]] = MISSING,
         embeds: Optional[Union[Embed, List[Embed]]] = MISSING,
         allowed_mentions: Optional[MessageInteraction] = MISSING,
@@ -247,6 +253,19 @@ class Context(_Context):
 
             payload["components"] = _components
 
+        if self.message.attachments is not None or attachments is not MISSING:
+            if attachments is MISSING:
+                attachments = self.message.attachments
+            _attachments: list = (
+                (
+                    [attachment._json for attachment in attachments]
+                    if isinstance(attachments, list)
+                    else [attachments._json]
+                )
+                if attachments
+                else []
+            )
+
         if not files or files is MISSING:
             _files = []
         elif isinstance(files, list):
@@ -254,6 +273,8 @@ class Context(_Context):
         else:
             _files = [files._json_payload(0)]
             files = [files]
+        
+        _files.extend(_attachments)
 
         payload["attachments"] = _files
 
@@ -285,6 +306,8 @@ async def command_send(
     :type content?: Optional[str]
     :param tts?: Whether the message utilizes the text-to-speech Discord programme or not.
     :type tts?: Optional[bool]
+    :param attachments?: The attachments to attach to the message. Needs to be uploaded to the CDN first
+    :type attachments?: Optional[List[Attachment]]
     :param files?: The files to attach to the message.
     :type files?: Optional[Union[File, List[File]]]
     :param embeds?: An embed, or list of embeds for the message.
@@ -365,6 +388,8 @@ async def command_edit(
     :type content?: Optional[str]
     :param tts?: Whether the message utilizes the text-to-speech Discord programme or not.
     :type tts?: Optional[bool]
+    :param attachments?: The attachments to attach to the message. Needs to be uploaded to the CDN first
+    :type attachments?: Optional[List[Attachment]]
     :param files?: The files to attach to the message.
     :type files?: Optional[Union[File, List[File]]]
     :param embeds?: An embed, or list of embeds for the message.

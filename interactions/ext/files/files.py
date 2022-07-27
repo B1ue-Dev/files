@@ -5,7 +5,11 @@ from aiohttp import MultipartWriter
 from interactions.api.http.route import Route
 from interactions.api.http.request import _Request
 from interactions.base import get_logger
-from interactions.client.context import CommandContext, ComponentContext, _Context
+from interactions.client.context import (
+    CommandContext,
+    ComponentContext,
+    _Context,
+)
 from interactions.client.models.component import _build_components
 
 from interactions import (
@@ -25,7 +29,9 @@ from interactions import (
     LibraryException,
 )
 
+
 log: Logger = get_logger("context")
+
 
 class Inter_Request:
     """A custom version of InteractionRequest that add file sending."""
@@ -114,7 +120,7 @@ class Inter_Request:
 
 class Context(_Context):
     """A custom version of _Context that add file sending."""
-    
+
     def __init__(self):
         pass
 
@@ -274,13 +280,12 @@ class Context(_Context):
         else:
             _files = [files._json_payload(0)]
             files = [files]
-        
+
         _files.extend(_attachments)
 
         payload["attachments"] = _files
 
         return payload, files
-
 
     _Context.send = _send
     _Context.edit = _edit
@@ -290,10 +295,10 @@ class Files(Extension):
     """I don't know what this does, but it is required to load the extension."""
     def __init__(self, client: Client):
         self.client: Client = client
-    
+
     def command_send(self, content: Optional[str] = MISSING, **kwargs) -> Message:
         return command_send(self, content=content, **kwargs)
-    
+
     def command_edit(self, content: Optional[str] = MISSING, **kwargs) -> Message:
         return command_edit(self, content=content, **kwargs)
 
@@ -332,24 +337,15 @@ async def command_send(
     _payload: dict = {"type": ctx.callback.value, "data": payload}
 
     msg = None
-    if ctx.responded or ctx.deferred:
-        if ctx.deferred:
-            res = await Inter_Request.edit_interaction_response(
-                ctx.client,
-                data=payload,
-                files=files,
-                token=ctx.token,
-                application_id=str(ctx.application_id),
-            )
-        else:
-            res = await Inter_Request._post_followup(
-                ctx.client,
-                data=payload,
-                files=files,
-                token=ctx.token,
-                application_id=str(ctx.application_id),
-            )
-        ctx.message = msg = Message(**res, _client=ctx.client)
+    if ctx.responded:
+        res = await Inter_Request._post_followup(
+            ctx.client,
+            data=payload,
+            files=files,
+            token=ctx.token,
+            application_id=str(ctx.application_id),
+        )
+        ctx.message = msg = Message(**res, _client=ctx._client)
     else:
         await Inter_Request.create_interaction_response(
             ctx.client,
@@ -463,108 +459,154 @@ async def command_edit(
     return Message(**payload, _client=ctx._client)
 
 
-# async def component_send(
-#     self: ComponentContext, content: Optional[str] = MISSING, **kwargs
-# ) -> Message:
-#     payload, files = await base_send(self, content, **kwargs)
+async def component_send(
+    ctx: ComponentContext, content: Optional[str] = MISSING, **kwargs
+) -> Message:
+    """
+    This allows the invocation state described in the "context" to send an interaction response.
 
-#     if not self.deferred:
-#         self.callback = InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE
+    :param content?: The contents of the message as a string or string-converted value.
+    :type content?: Optional[str]
+    :param tts?: Whether the message utilizes the text-to-speech Discord programme or not.
+    :type tts?: Optional[bool]
+    :param attachments?: The attachments to attach to the message. Needs to be uploaded to the CDN first
+    :type attachments?: Optional[List[Attachment]]
+    :param files?: The files to attach to the message.
+    :type files?: Optional[Union[File, List[File]]]
+    :param embeds?: An embed, or list of embeds for the message.
+    :type embeds?: Optional[Union[Embed, List[Embed]]]
+    :param allowed_mentions?: The message interactions/mention limits that the message can refer to.
+    :type allowed_mentions?: Optional[MessageInteraction]
+    :param components?: A component, or list of components for the message.
+    :type components?: Optional[Union[ActionRow, Button, SelectMenu, List[Union[ActionRow, Button, SelectMenu]]]]
+    :param ephemeral?: Whether the response is hidden or not.
+    :type ephemeral?: Optional[bool]
+    :return: The sent message as an object.
+    :rtype: Message
+    """
 
-#     _payload: dict = {"type": self.callback.value, "data": payload}
+    payload, files = await Context._send(ctx, content, **kwargs)
 
-#     msg = None
-#     if (
-#         self.responded
-#         or self.deferred
-#         or self.callback == InteractionCallbackType.DEFERRED_UPDATE_MESSAGE
-#     ):
-#         if self.deferred:
-#             res = await edit_interaction_response(
-#                 self.client,
-#                 data=payload,
-#                 files=files,
-#                 token=self.token,
-#                 application_id=str(self.application_id),
-#             )
-#             # self.deferred = False
-#             self.responded = True
-#         else:
-#             res = await _post_followup(
-#                 self.client,
-#                 data=payload,
-#                 files=files,
-#                 token=self.token,
-#                 application_id=str(self.application_id),
-#             )
-#         self.message = msg = Message(**res, _client=self.client)
+    if not ctx.deferred:
+        ctx.callback = InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE
 
-#     else:
-#         res = await create_interaction_response(
-#             self.client,
-#             token=self.token,
-#             application_id=int(self.id),
-#             data=_payload,
-#             files=files,
-#         )
-#         if res and not res.get("code"):
-#             # if sending message fails somehow
-#             msg = Message(**res, _client=self.client)
-#             self.message = msg
-#         self.responded = True
+    _payload: dict = {"type": ctx.callback.value, "data": payload}
 
-#     if msg is not None:
-#         return msg
-#     return Message(**payload)
+    msg = None
+    if ctx.responded:
+        res = await Inter_Request._post_followup(
+            ctx.client,
+            data=payload,
+            token=ctx.token,
+            application_id=str(ctx.application_id),
+            files=files,
+        )
+        ctx.message = msg = Message(**res, _client=ctx._client)
+    else:
+        await Inter_Request.create_interaction_response(
+            ctx.client,
+            token=ctx.token,
+            application_id=int(ctx.id),
+            data=_payload,
+            files=files,
+        )
+
+        try:
+            _msg = await ctx._client.get_original_interaction_response(
+                ctx.token, str(ctx.application_id)
+            )
+        except LibraryException:
+            pass
+        else:
+            ctx.message = msg = Message(**_msg, _client=ctx._client)
+
+        ctx.responded = True
+
+    if msg is not None:
+        return msg
+    return Message(**payload, _client=ctx._client)
 
 
-# async def component_edit(
-#     self, content: Optional[str] = MISSING, **kwargs
-# ) -> Message:
-#     payload, files = await base_edit(self, content, **kwargs)
-    
-#     if not self.deferred:
-#         self.callback = InteractionCallbackType.UPDATE_MESSAGE
-#         await create_interaction_response(
-#             self.client,
-#             token=self.token,
-#             application_id=int(self.id),
-#             data={"type": self.callback.value, "data": payload},
-#             files=files,
-#         )
-#         # self.message = payload
-#         self.responded = True
+async def component_edit(
+    ctx: ComponentContext, content: Optional[str] = MISSING, **kwargs
+) -> Message:
+    """
+    This allows the invocation state described in the "context" to edit an interaction response.
 
-#     elif self.callback != InteractionCallbackType.DEFERRED_UPDATE_MESSAGE:
-#         res = await _post_followup(
-#             self.client,
-#             data=payload,
-#             files=files,
-#             token=self.token,
-#             application_id=str(self.application_id),
-#         )
-#         self.message = Message(**res, _client=self._client)
-#     else:
-#         res = await edit_interaction_response(
-#             self.client,
-#             data=payload,
-#             files=files,
-#             token=self.token,
-#             application_id=str(self.application_id),
-#         )
-#         self.responded = True
-#         self.message = Message(**res, _client=self._client)
+    :param content?: The contents of the message as a string or string-converted value.
+    :type content?: Optional[str]
+    :param tts?: Whether the message utilizes the text-to-speech Discord programme or not.
+    :type tts?: Optional[bool]
+    :param attachments?: The attachments to attach to the message. Needs to be uploaded to the CDN first
+    :type attachments?: Optional[List[Attachment]]
+    :param files?: The files to attach to the message.
+    :type files?: Optional[Union[File, List[File]]]
+    :param embeds?: An embed, or list of embeds for the message.
+    :type embeds?: Optional[Union[Embed, List[Embed]]]
+    :param allowed_mentions?: The message interactions/mention limits that the message can refer to.
+    :type allowed_mentions?: Optional[MessageInteraction]
+    :param components?: A component, or list of components for the message.
+    :type components?: Optional[Union[ActionRow, Button, SelectMenu, List[Union[ActionRow, Button, SelectMenu]]]]
+    :param ephemeral?: Whether the response is hidden or not.
+    :type ephemeral?: Optional[bool]
+    :return: The sent message as an object.
+    :rtype: Message
+    """
 
-#     if self.message is None:
-#         self.message = Message(**payload, _client=self._client)
+    payload, files = await Context._send(ctx, content, **kwargs)
 
-#     return self.message
+    msg = None
+
+    if not ctx.deferred:
+        ctx.callback = InteractionCallbackType.UPDATE_MESSAGE
+        await Inter_Request.create_interaction_response(
+            ctx.client,
+            token=ctx.token,
+            application_id=int(ctx.id),
+            data={"type": ctx.callback.value, "data": payload},
+            files=files,
+        )
+
+        try:
+            _msg = await ctx._client.get_original_interaction_response(
+                ctx.token, str(ctx.application_id)
+            )
+        except LibraryException:
+            pass
+        else:
+            ctx.message = msg = Message(**_msg, _client=ctx._client)
+
+        ctx.responded = True
+
+    elif ctx.callback != InteractionCallbackType.DEFERRED_UPDATE_MESSAGE:
+        await Inter_Request._post_followup(
+            ctx.client,
+            data=payload,
+            files=files,
+            token=ctx.token,
+            application_id=str(ctx.application_id),
+        )
+    else:
+        res = await Inter_Request.edit_interaction_response(
+            ctx.client,
+            data=payload,
+            files=files,
+            token=ctx.token,
+            application_id=str(ctx.application_id),
+        )
+        ctx.responded = True
+        ctx.message = msg = Message(**res, _client=ctx._client)
+
+    if msg is not None:
+        return msg
+
+    return Message(**payload, _client=ctx._client)
 
 
 CommandContext.send = command_send
 CommandContext.edit = command_edit
-# ComponentContext.send = component_send
-# ComponentContext.edit = component_edit
+ComponentContext.send = component_send
+ComponentContext.edit = component_edit
 
 
 def setup(client: Client):

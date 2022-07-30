@@ -302,6 +302,12 @@ class Files(Extension):
     def command_edit(self, content: Optional[str] = MISSING, **kwargs) -> Message:
         return command_edit(self, content=content, **kwargs)
 
+    def component_send(self, content: Optional[str] = MISSING, **kwargs) -> Message:
+        return component_send(self, content=content, **kwargs)
+
+    def component_edit(self, content: Optional[str] = MISSING, **kwargs) -> Message:
+        return component_send(self, content=content, **kwargs)
+
 
 async def command_send(
     ctx: CommandContext, content: Optional[str] = MISSING, **kwargs

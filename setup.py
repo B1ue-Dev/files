@@ -15,7 +15,7 @@ setup(
     license="MIT",
     packages=["interactions.ext.files"],
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",

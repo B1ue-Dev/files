@@ -9,7 +9,7 @@ setup(
     description="An external for interactions.py, adding files to Context for file sending",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Jimmy-Blue/interactions-files",
+    url="https://github.com/interactions-py/interactions-files",
     author="Jimmy-Blue",
     author_email="jimmyblue00@duck.com",
     license="GNU GPL-3",

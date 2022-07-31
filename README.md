@@ -57,4 +57,4 @@ For more information on the fuctions, check out the documentation.
 
 # Documentation
 
-[![API Reference](https://img.shields.io/badge/API-Reference-blue.svg?color=blue&style=for-the-badge)](./API-Reference)
+[![API Reference](https://img.shields.io/badge/API-Reference-blue.svg?color=blue&style=for-the-badge)](https://github.com/interactions-py/files/wiki/API-Reference)

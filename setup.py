@@ -9,7 +9,7 @@ setup(
     description="An extension library for interactions.py allowing files in interaction responses.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/interactions-py/interactions-files",
+    url="https://github.com/interactions-py/files",
     author="Jimmy-Blue",
     author_email="jimmyblue00@duck.com",
     license="MIT",

@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="interactions-files",
-    version="1.1.2",
+    version="1.1.2-post.1",
     description="An extension library for interactions.py allowing files in interaction responses.",
     long_description=long_description,
     long_description_content_type="text/markdown",

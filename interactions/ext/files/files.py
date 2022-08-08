@@ -287,9 +287,6 @@ class Context(_Context):
 
         return payload, files
 
-    _Context.send = _send
-    _Context.edit = _edit
-
 
 class Files(Extension):
     """I don't know what this does, but it is required to load the extension."""
@@ -609,11 +606,13 @@ async def component_edit(
     return Message(**payload, _client=ctx._client)
 
 
-CommandContext.send = command_send
-CommandContext.edit = command_edit
-ComponentContext.send = component_send
-ComponentContext.edit = component_edit
+def setup(client: Client) -> Files:
+    """Setup the extension."""
 
-
-def setup(client: Client):
+    _Context.send = Context._send
+    _Context.edit = Context._edit
+    CommandContext.send = command_send
+    CommandContext.edit = command_edit
+    ComponentContext.send = component_send
+    ComponentContext.edit = component_edit
     return Files(client)

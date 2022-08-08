@@ -252,7 +252,7 @@ class Context(_Context):
 
         if self.message.components is not None or components is not MISSING:
             if components is MISSING:
-                _components = self.message.components
+                _components = _build_components(components=self.message.components)
             elif not components:
                 _components = []
             else:
@@ -286,9 +286,6 @@ class Context(_Context):
         payload["attachments"] = _files
 
         return payload, files
-
-    _Context.send = _send
-    _Context.edit = _edit
 
 
 class Files(Extension):
@@ -559,7 +556,7 @@ async def component_edit(
     :rtype: Message
     """
 
-    payload, files = await Context._send(ctx, content, **kwargs)
+    payload, files = await Context._edit(ctx, content, **kwargs)
 
     msg = None
 
@@ -609,11 +606,13 @@ async def component_edit(
     return Message(**payload, _client=ctx._client)
 
 
-CommandContext.send = command_send
-CommandContext.edit = command_edit
-ComponentContext.send = component_send
-ComponentContext.edit = component_edit
+def setup(client: Client) -> Files:
+    """Setup the extension."""
 
-
-def setup(client: Client):
+    _Context.send = Context._send
+    _Context.edit = Context._edit
+    CommandContext.send = command_send
+    CommandContext.edit = command_edit
+    ComponentContext.send = component_send
+    ComponentContext.edit = component_edit
     return Files(client)

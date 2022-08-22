@@ -28,7 +28,7 @@ By default, interactions.py does not allow you to send files in `CommandContext`
 
 You can load `interactions-files` like every other Extension by using:
 ```py
-client.load('interactions-ext-files')
+client.load('interactions.ext.files')
 ```
 
 After that, you can start sending files in Context. For example of doing this, go to [this](./examples).

@@ -13,7 +13,7 @@ client = interactions.Client(
 # These are just normal parts of the bot.
 
 # To use files in CommandContext send, you need to load it as an extension.
-client.load("interactions-ext-files")
+client.load("interactions.ext.files")
 
 # We have the necessary parts, let's create a basic command to demonstrate it.
 

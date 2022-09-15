@@ -332,6 +332,9 @@ async def command_send(
     :rtype: Message
     """
 
+    if not isinstance(ctx, CommandContext):
+        return log.warning(f"You can only use command_send for CommandContext, not {type(ctx).__name__}")
+
     payload, files = await Context._send(ctx, content, **kwargs)
 
     if not ctx.deferred:
@@ -404,6 +407,9 @@ async def command_edit(
     :return: The sent message as an object.
     :rtype: Message
     """
+
+    if not isinstance(ctx, CommandContext):
+        return log.warning(f"You can only use command_edit for CommandContext, not {type(ctx).__name__}")
 
     payload, files = await Context._edit(ctx, content, **kwargs)
     msg = None
@@ -488,6 +494,9 @@ async def component_send(
     :rtype: Message
     """
 
+    if not isinstance(ctx, ComponentContext):
+        return log.warning(f"You can only use component_send for ComponentContext, not {type(ctx).__name__}")
+
     payload, files = await Context._send(ctx, content, **kwargs)
 
     if not ctx.deferred:
@@ -555,6 +564,9 @@ async def component_edit(
     :return: The sent message as an object.
     :rtype: Message
     """
+
+    if not isinstance(ctx, ComponentContext):
+        return log.warning(f"You can only use component_edit for ComponentContext, not {type(ctx).__name__}")
 
     payload, files = await Context._edit(ctx, content, **kwargs)
 

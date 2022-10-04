@@ -345,7 +345,7 @@ async def command_send(
     msg = None
     if ctx.responded:
         res = await Inter_Request._post_followup(
-            ctx.client,
+            ctx._client,
             data=payload,
             files=files,
             token=ctx.token,
@@ -354,7 +354,7 @@ async def command_send(
         ctx.message = msg = Message(**res, _client=ctx._client)
     else:
         await Inter_Request.create_interaction_response(
-            ctx.client,
+            ctx._client,
             token=ctx.token,
             application_id=int(ctx.id),
             data=_payload,
@@ -434,7 +434,7 @@ async def command_edit(
         else:
             try:
                 res = await Inter_Request.edit_interaction_response(
-                    ctx.client,
+                    ctx._client,
                     data=payload,
                     files=files,
                     token=ctx.token,
@@ -453,7 +453,7 @@ async def command_edit(
     else:
         try:
             res = await Inter_Request.edit_interaction_response(
-                ctx.client, token=ctx.token, application_id=str(ctx.application_id), data=payload, files=files
+                ctx._client, token=ctx.token, application_id=str(ctx.application_id), data=payload, files=files
             )
         except LibraryException as e:
             if e.code in {10015, 10018}:
@@ -507,7 +507,7 @@ async def component_send(
     msg = None
     if ctx.responded:
         res = await Inter_Request._post_followup(
-            ctx.client,
+            ctx._client,
             data=payload,
             token=ctx.token,
             application_id=str(ctx.application_id),
@@ -516,7 +516,7 @@ async def component_send(
         ctx.message = msg = Message(**res, _client=ctx._client)
     else:
         await Inter_Request.create_interaction_response(
-            ctx.client,
+            ctx._client,
             token=ctx.token,
             application_id=int(ctx.id),
             data=_payload,
@@ -575,7 +575,7 @@ async def component_edit(
     if not ctx.deferred:
         ctx.callback = InteractionCallbackType.UPDATE_MESSAGE
         await Inter_Request.create_interaction_response(
-            ctx.client,
+            ctx._client,
             token=ctx.token,
             application_id=int(ctx.id),
             data={"type": ctx.callback.value, "data": payload},
@@ -595,7 +595,7 @@ async def component_edit(
 
     elif ctx.callback != InteractionCallbackType.DEFERRED_UPDATE_MESSAGE:
         await Inter_Request._post_followup(
-            ctx.client,
+            ctx._client,
             data=payload,
             files=files,
             token=ctx.token,
@@ -603,7 +603,7 @@ async def component_edit(
         )
     else:
         res = await Inter_Request.edit_interaction_response(
-            ctx.client,
+            ctx._client,
             data=payload,
             files=files,
             token=ctx.token,
